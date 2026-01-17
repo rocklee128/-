@@ -3,231 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LifeOS: 完整生存审计与行动系统</title>
+    <title>LifeOS - 个人生存逻辑审计系统</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     
     <style>
-        :root {
-            --bg-color: #050505;
-            --card-bg: #0a0a0a;
-            --paper-bg: #fffbf0;
-            --border: #27272a;
-            --accent: #00f0ff; /* 审计阶段：赛博蓝 */
-            --gold: #FFD700;   /* 行动阶段：黑金 */
-            --danger: #ff2a6d;
-            --text-main: #e4e4e7;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: 'Noto Sans SC', sans-serif;
-            overflow-x: hidden;
-        }
-
+        :root { --bg: #050505; --paper: #fdfbf7; --ink: #1a1a1a; --accent: #00f0ff; --matrix: #0f0; --danger: #ff2a6d; --gold: #FFD700; }
+        body { background-color: var(--bg); color: #e4e4e7; font-family: 'Noto Sans SC', sans-serif; -webkit-font-smoothing: antialiased; }
         .mono { font-family: 'JetBrains Mono', monospace; }
         .serif { font-family: 'Noto Serif SC', serif; }
-
-        /* 动画定义 */
+        
+        /* Animations */
         .fade-in { animation: fadeIn 0.6s ease-out forwards; opacity: 0; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .glow-pulse { animation: glowPulse 3s infinite ease-in-out; }
-        @keyframes glowPulse {
-            0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.1); }
-            50% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.4); }
-        }
+        .slide-up { animation: slideUp 0.5s ease-out forwards; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* 3D 翻转效果 */
+        /* Report Paper */
+        .report-paper { background-color: var(--paper); color: var(--ink); box-shadow: 0 0 50px rgba(0,0,0,0.5); background-image: radial-gradient(#e5e5e5 1px, transparent 1px); background-size: 20px 20px; }
+        .stamp { mask-image: url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/8399/grunge.png'); mask-size: 944px 604px; mix-blend-mode: multiply; animation: stamp-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 0; transform: scale(1.5) rotate(-15deg); border-width: 6px !important; font-weight: 900 !important; }
+        @keyframes stamp-in { to { opacity: 1; transform: scale(1) rotate(-12deg); } }
+
+        /* Dashboard & Cards */
+        .dash-card { background: linear-gradient(145deg, #111, #0a0a0a); border: 1px solid #222; border-radius: 1rem; position: relative; overflow: hidden; }
+        .option-card { background: rgba(255,255,255,0.02); border: 1px solid #333; transition: all 0.2s; }
+        .option-card:hover { border-color: #666; background: rgba(255,255,255,0.05); }
+        
+        /* Checkbox Style (Capsule) */
+        .check-capsule {
+            height: 3.5rem;
+            border: 1px solid #333; border-radius: 0.75rem;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255,255,255,0.02);
+            position: relative; overflow: hidden;
+        }
+        .check-capsule:hover { border-color: var(--matrix-green); background: rgba(0, 255, 0, 0.05); }
+        .check-capsule.checked {
+            background: rgba(0, 255, 0, 0.15); border-color: var(--matrix-green);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+        }
+        .check-capsule .day-label { font-size: 0.65rem; color: #666; font-family: 'JetBrains Mono'; margin-bottom: 2px; }
+        .check-capsule.checked .day-label { color: var(--matrix-green); }
+        .check-capsule .icon-box { color: #333; transition: all 0.3s; transform: scale(0.8); }
+        .check-capsule.checked .icon-box { color: var(--matrix-green); transform: scale(1.2); filter: drop-shadow(0 0 5px var(--matrix-green)); }
+
+        /* Flip */
         .perspective-1000 { perspective: 1000px; }
         .transform-style-3d { transform-style: preserve-3d; }
         .backface-hidden { backface-visibility: hidden; }
         .rotate-y-180 { transform: rotateY(180deg); }
 
-        /* 通用组件样式 */
-        .option-card {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border);
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .option-card:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: #555;
-            transform: translateY(-2px);
-        }
+        .bg-grid { background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px); background-size: 40px 40px; }
+        .glow-pulse { animation: glowPulse 3s infinite ease-in-out; }
+        @keyframes glowPulse { 0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.1); } 50% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.4); } 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.1); } }
         
-        .expert-card {
-            background: linear-gradient(145deg, #1a1a1a, #0f0f0f);
-            border: 1px solid rgba(255, 215, 0, 0.2);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-        }
-
-        .bg-grid {
-            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
-        }
-        
+        .modal-overlay { background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); }
         .social-btn { transition: all 0.2s; }
+        .social-btn:hover { transform: translateY(-2px); border-color: var(--gold); color: var(--gold); }
+
+        /* Input Styling */
+        .cyber-input { background: rgba(0,0,0,0.5); border: 1px solid #333; color: #fff; font-family: 'Noto Sans SC', sans-serif; transition: all 0.3s; }
+        .cyber-input:focus { border-color: var(--gold); box-shadow: 0 0 15px rgba(255, 215, 0, 0.2); outline: none; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
 
         // ==========================================
-        // 1. 数据配置 (完整版)
+        // 1. SYSTEM DATABASE
         // ==========================================
-        
-        // 审计问题配置
-        const DEEP_AUDIT_QUESTIONS = [
-            { id: "q1_runway", module: "M1_FINANCIAL", label: "财务健康 / 生存底气", question: "如果明天所有主动收入突然归零，你能维持多久？", options: [
-                { val: "A", text: "立即崩溃 (< 1个月)", score: 0 }, { val: "B", text: "焦虑支撑 (1-6个月)", score: 30 },
-                { val: "C", text: "有调整期 (6-18个月)", score: 60 }, { val: "D", text: "生存无忧 (> 18个月)", score: 100 }
-            ]},
-            { id: "q4_control", module: "M2_TIME", label: "时间自主 / 颗粒度", question: "打开你的日历，谁在决定你每天怎么过？", options: [
-                { val: "A", text: "他人主导 (随时被打断)", score: 10 }, { val: "B", text: "锯齿状 (大部分被动)", score: 40 },
-                { val: "C", text: "模块化 (有免打扰时间)", score: 70 }, { val: "D", text: "完全自主 (只做想做的事)", score: 100 }
-            ]},
-            { id: "q7_keyman", module: "M3_RISK", label: "风险护城河 / 关键人", question: "如果作为CEO的你突然住院一个月，业务会怎样？", options: [
-                { val: "A", text: "彻底瘫痪", risk: "FATAL" }, { val: "B", text: "陷入混乱，收入大降", risk: "HIGH" },
-                { val: "C", text: "短暂波动", risk: "MED" }, { val: "D", text: "毫无影响", risk: "LOW" }
-            ]},
-            { id: "q8_replace", module: "M3_RISK", label: "风险护城河 / 被替代难度", question: "如果老板或市场想找人替代你，难度多大？", options: [
-                { val: "A", text: "极易 (毕业生/GPT可替)", moat: 0 }, { val: "B", text: "中等 (需培训几个月)", moat: 30 },
-                { val: "C", text: "困难 (需特定技能)", moat: 70 }, { val: "D", text: "极难 (我是IP本身)", moat: 100 }
-            ]},
-            { id: "q9_dep", module: "M3_RISK", label: "风险护城河 / 客户集中度", question: "你的收入来源是否依赖单一渠道？", options: [
-                { val: "A", text: "单点依赖 (断供即归零)", risk: "FATAL" }, { val: "B", text: "双轨制", risk: "MED" },
-                { val: "C", text: "多点支撑", risk: "LOW" }, { val: "D", text: "生态化", risk: "NONE" }
-            ]}
+
+        const QUESTIONS = [
+            { id: "q1_runway", module: "M1 • 财富底盘", label: "财务健康 / 生存底气", question: "如果明天停止工作，你的存款能维持多久？", options: [{val:"A",text:"< 1个月 (崩溃)",s:0}, {val:"B",text:"1-6个月 (焦虑)",s:30}, {val:"C",text:"6-18个月 (调整期)",s:60}, {val:"D",text:"> 18个月 (无忧)",s:100}] },
+            { id: "q2_passive", module: "M1 • 财富底盘", label: "财务健康 / 收入成分", question: "你的“睡后收入”占比多少？", options: [{val:"A",text:"0% (纯卖时间)",s:0}, {val:"B",text:"< 10% (理财)",s:20}, {val:"C",text:"30-50% (副业)",s:70}, {val:"D",text:"> 50% (资产)",s:100}] },
+            { id: "q3_growth", module: "M1 • 财富底盘", label: "财务健康 / 增长跑道", question: "回顾过去 3 年，你的净资产增长速度？", options: [{val:"A",text:"倒退",s:0}, {val:"B",text:"龟速 (跑输通胀)",s:30}, {val:"C",text:"线性 (靠加薪)",s:60}, {val:"D",text:"指数 (爆发)",s:100}] },
+            
+            { id: "q4_control", module: "M2 • 时间主权", label: "时间自主 / 颗粒度", question: "谁在决定你每天怎么过？", options: [{val:"A",text:"他人主导",s:10}, {val:"B",text:"被动锯齿状",s:40}, {val:"C",text:"模块化掌控",s:70}, {val:"D",text:"完全自主",s:100}] },
+            { id: "q5_role", module: "M2 • 时间主权", label: "时间自主 / 业务角色", question: "你在赚钱系统中扮演什么？", options: [{val:"A",text:"电池 (耗材)",s:10}, {val:"B",text:"核心零件",s:50}, {val:"C",text:"驾驶员",s:80}, {val:"D",text:"设计师",s:100}] },
+            { id: "q6_rnd", module: "M2 • 时间主权", label: "时间自主 / 研发投入", question: "上周花了多少时间投资未来？", options: [{val:"A",text:"0小时",s:0}, {val:"B",text:"< 2小时",s:30}, {val:"C",text:"5-10小时",s:70}, {val:"D",text:"> 10小时",s:100}] },
+            
+            { id: "q7_keyman", module: "M3 • 反脆弱系统", label: "风险护城河 / 关键人风险", question: "如果你住院一个月，业务会怎样？", options: [{val:"A",text:"彻底瘫痪",s:0}, {val:"B",text:"陷入混乱",s:30}, {val:"C",text:"短暂波动",s:70}, {val:"D",text:"自动增长",s:100}] },
+            { id: "q8_replace", module: "M3 • 反脆弱系统", label: "风险护城河 / 被替代难度", question: "找人或AI替代你的核心功能，难度多大？", options: [{val:"A",text:"极易",s:0}, {val:"B",text:"中等",s:30}, {val:"C",text:"困难",s:70}, {val:"D",text:"极难",s:100}] },
+            { id: "q9_dep", module: "M3 • 反脆弱系统", label: "风险护城河 / 客户集中度", question: "收入来源是否单一？", options: [{val:"A",text:"单点依赖",s:0}, {val:"B",text:"双轨制",s:50}, {val:"C",text:"多点支撑",s:80}, {val:"D",text:"生态化",s:100}] },
+            
+            { id: "q10_burnout", module: "M4 • 能量熵增", label: "系统损耗 / 身心磨损", question: "现在的身心状态？", options: [{val:"A",text:"红色警报",s:0}, {val:"B",text:"亚健康",s:30}, {val:"C",text:"平稳",s:70}, {val:"D",text:"充盈",s:100}] },
+            { id: "q11_network", module: "M4 • 能量熵增", label: "系统损耗 / 社交滋养", question: "最常接触的5个人状态？", options: [{val:"A",text:"能量黑洞",s:0}, {val:"B",text:"平庸温和",s:30}, {val:"C",text:"互利共生",s:70}, {val:"D",text:"高维引领",s:100}] },
+            { id: "q12_meaning", module: "M4 • 能量熵增", label: "系统损耗 / 愿景对齐", question: "如果给一千万让你永远停止现在做的事？", options: [{val:"A",text:"狂喜",s:0}, {val:"B",text:"犹豫",s:30}, {val:"C",text:"会拿(偷偷做)",s:70}, {val:"D",text:"拒绝",s:100}] }
         ];
 
-        // 战术探测问题（连接审计与行动的桥梁）
-        const TACTICAL_PROBES = {
-            "GOLDEN_HANDCUFFS": { 
-                question: "阻碍你跳出‘高薪陷阱’的最大恐惧是什么？",
-                options: [
-                    { id: "MONEY", text: "A. 生存降级：怕断供，没法维持体面生活", route: "FINANCE_PRESSURE" },
-                    { id: "EGO", text: "B. 身份落差：怕离开平台，光环消失没人理", route: "IDENTITY_TEST" }
-                ]
-            },
-            "FOUNDERS_TRAP": { 
-                question: "你不敢彻底放权给下属的真实原因是什么？",
-                options: [
-                    { id: "TRUST", text: "A. 能力不信任：怕他们搞砸，不如我自己做快", route: "TRUST_BUILD" },
-                    { id: "STD", text: "B. 缺乏标准：这是非标业务，只有我懂怎么做", route: "SOP_SYSTEM" }
-                ]
-            },
-            "UNDERVALUED": { 
-                question: "你拥有能力，但为什么还没变现？",
-                options: [
-                    { id: "SHAME", text: "A. 商业羞耻：觉得谈钱很俗，不好意思销售", route: "SALES_BREAK" },
-                    { id: "UNKNOWN", text: "B. 渠道闭塞：产品很好，但不知道去哪找客户", route: "TRAFFIC_HACK" }
-                ]
-            },
-            "FRAGILE_MIDDLE": { 
-                question: "如果明天你的行业突然消失，你的第一反应是？",
-                options: [
-                    { id: "PANIC", text: "A. 大脑空白，除了这个我什么都不会", route: "SKILL_BACKUP" },
-                    { id: "NETWORK", text: "B. 我有朋友，但不知道谁能帮我转型", route: "NETWORK_ACTIVATE" }
-                ]
-            },
-            "SURVIVAL_MODE": { 
-                question: "在当下，你手里哪怕只有一点点的资源是什么？",
-                options: [
-                    { id: "TIME", text: "A. 时间：我有大把时间，吃苦没问题", route: "LABOR_CASH" },
-                    { id: "SKILL", text: "B. 技能：我有一技之长，但没客户", route: "SKILL_CASH" }
-                ]
-            },
-            "STAGNANT": { 
-                question: "你现在最缺乏的是什么？",
-                options: [
-                    { id: "STIM", text: "A. 刺激：生活像死水，毫无波澜", route: "CHAOS_INJECT" },
-                    { id: "DIR", text: "B. 方向：想改变，但不知道往哪走", route: "VISION_QUEST" }
-                ]
-            },
-            "FREEDOM_LEADER": { 
-                question: "你现在的核心驱动力是？",
-                options: [
-                    { id: "LEGACY", text: "A. 传承：想留下点东西给世界", route: "MENTORSHIP" },
-                    { id: "PLAY", text: "B. 好奇：想探索未知的领域", route: "NEW_GAME" }
-                ]
-            }
+        const PERSONA_DB = {
+            "SURVIVAL_MODE": { label: "生存危机型", verdict: "你的商业模式已击穿盈亏平衡点。", desc: "现金流极度脆弱。首要任务是止血和快速变现。", priority: "止血 & 现金流" },
+            "GOLDEN_HANDCUFFS": { label: "金手铐综合症", verdict: "你拥有高溢价，但本质是“高级耗材”。", desc: "有钱没时间。生活方式锁死了收入结构。你在消耗生命换取货币。", priority: "赎回时间 & 降级" },
+            "FOUNDERS_TRAP": { label: "创始人陷阱", verdict: "你拥有的不是企业，是一份全年无休的工作。", desc: "公司离不开你，无法规模化。你是系统最大的瓶颈。", priority: "去自我化 & 授权" },
+            "UNDERVALUED": { label: "资产错配型", verdict: "你坐在金矿上乞讨。", desc: "有能力（高资产），不懂变现（低杠杆）。你需要销售思维。", priority: "暴力输出 & 销售" },
+            "FRAGILE_MIDDLE": { label: "脆弱中产型", verdict: "表面光鲜，实则如履薄冰。", desc: "单点依赖是最大风险。任何黑天鹅都能击穿防线。", priority: "系统备份 & 副业" },
+            "STAGNANT": { label: "平庸稳健型", verdict: "你在温水中，还没意识到水温在升高。", desc: "安全区就是平庸区。不寻找不对称机会，将被慢速淘汰。", priority: "打破惯性 & 探索" },
+            "FREEDOM_LEADER": { label: "自由领航者", verdict: "你已跃迁至“设计生活”的维度。", desc: "系统健壮。现在的敌人是无聊。寻找新使命。", priority: "精神传承 & 影响力" }
         };
 
-        // MVP 任务库
-        const MVP_MISSIONS = {
-            "FINANCE_PRESSURE": { title: "降级沙盘推演", time: "2小时", cost: "0元", desc: "恐惧源于未知。打开Excel，计算如果卖房/换车/砍掉奢侈消费，你的存款能支撑你‘不工作’生活多久？你要看到那个具体的数字（如‘5年’），恐惧才会消失。", steps: ["列出每月最低生存支出", "计算现有资产变现价值", "得出‘自由年限’"] },
-            "IDENTITY_TEST": { title: "战略性做减法", time: "1天", cost: "社交货币", desc: "找出你目前业务中‘利润最低但耗时最多’的那个客户或项目，主动切断合作。或者在工作中拒绝一个非核心会议。验证：天塌不下来。", steps: ["识别‘有毒’业务", "发送终止合作邮件/拒绝参会", "记录心理感受"] },
-            "TRUST_BUILD": { title: "500元 犯错基金", time: "1次任务", cost: "500元风险", desc: "给下属一项完整任务，并明确告诉他：‘即使损失 500 元也不怪你，你自己决定怎么做’。强迫自己闭嘴、不看、不插手。测试团队的自愈力。", steps: ["选定一个小任务", "授权并承诺免责", "物理隔离（离开公司/不回消息）"] },
-            "SOP_SYSTEM": { title: "克隆人计划 (录屏SOP)", time: "1小时", cost: "0元", desc: "打开录屏软件，把你每天重复做的一件事录下来，一边做一边讲解细节。直接发给助理或团队，并宣布：‘以后这件事看视频，别问我’。", steps: ["识别重复性工作", "录制全过程", "交付并建立索引"] },
-            "SALES_BREAK": { title: "高客单提案 (High-Ticket Pitch)", time: "3天", cost: "0元", desc: "设计一个比你现在价格高 5-10 倍的服务方案。向一位潜在的高净值客户（或老板）进行提案。不要怕被拒绝，你的目的是打破金钱羞耻，测试价值上限。", steps: ["设计顶级服务方案", "寻找一位高净值目标", "发送提案并请求反馈"] },
-            "TRAFFIC_HACK": { title: "知识胶囊 (Knowledge Capsule)", time: "4小时", cost: "0元", desc: "停止输入！把你最擅长的技能，浓缩成一个解决具体问题的‘胶囊’（清单/模版/3分钟视频）。发到公域平台，目标是获得 10 个陌生人的感谢。", steps: ["提炼一个痛点解法", "制作极简内容", "发布并分发"] },
-            "DEFAULT": { title: "24小时 极简生存测试", time: "24小时", cost: "0元", desc: "这是一个通用重置程序。下个周末，断网、不花钱、不工作。只喝水和散步。排空系统的多巴胺，重启你的感知力。", steps: ["关闭手机", "封锁钱包", "独处"] }
-        };
-
-        // 逻辑引擎：计算用户画像
+        // --- ALGORITHMS ---
         const calculatePersona = (answers) => {
             const getVal = (id) => answers[id]?.val || 'A';
-            
-            // 逻辑规则
-            if (['D'].includes(getVal('q1_runway')) && ['D'].includes(getVal('q4_control'))) return { id: "FREEDOM_LEADER", label: "自由领航者", desc: "你的系统极其健壮，实现了从“谋生”到“设计生活”的跃迁。", priority: "寻找改变世界的支点" };
-            if (getVal('q1_runway') === 'A') return { id: "SURVIVAL_MODE", label: "生存危机型", desc: "你的财务防线已击穿。首要任务不是战略，而是止血与生存。", priority: "建立现金流缓冲" };
-            if (['C','D'].includes(getVal('q1_runway')) && ['A','B'].includes(getVal('q4_control'))) return { id: "GOLDEN_HANDCUFFS", label: "金手铐综合症", desc: "你拥有高薪，但生活方式锁死了你的自由。你不敢停下，因为你是系统唯一的支柱。", priority: "购买时间 & 资产重组" };
-            if (['A','B'].includes(getVal('q7_keyman')) && ['C','D'].includes(getVal('q1_runway'))) return { id: "FOUNDERS_TRAP", label: "创始人陷阱", desc: "公司越大，你越累。你成为了企业发展的最大瓶颈。", priority: "建立SOP & 授权机制" };
-            if (getVal('q9_dep') === 'A') return { id: "FRAGILE_MIDDLE", label: "脆弱中产型", desc: "表面光鲜，实则如履薄冰。单点依赖是你最大的系统性风险。", priority: "发展第二曲线" };
-            if (['C','D'].includes(getVal('q8_replace'))) return { id: "UNDERVALUED", label: "资产错配型", desc: "你有极高的无形资产，但缺乏商业杠杆。你在贱卖你的才华。", priority: "寻找杠杆 (营销/人脉)" };
+            if (['D'].includes(getVal('q1_runway')) && ['D'].includes(getVal('q4_control'))) return "FREEDOM_LEADER";
+            if (getVal('q1_runway') === 'A') return "SURVIVAL_MODE";
+            if (['C','D'].includes(getVal('q1_runway')) && ['A','B'].includes(getVal('q4_control'))) return "GOLDEN_HANDCUFFS";
+            if (['B','C'].includes(getVal('q5_role')) && ['A','B'].includes(getVal('q7_keyman')) && ['C','D'].includes(getVal('q1_runway'))) return "FOUNDERS_TRAP";
+            if (['C','D'].includes(getVal('q6_rnd')) && ['C','D'].includes(getVal('q8_replace'))) return "UNDERVALUED";
+            if (getVal('q9_dep') === 'A') return "FRAGILE_MIDDLE";
+            return "STAGNANT";
+        };
 
-            return { id: "STAGNANT", label: "平庸稳健型", desc: "处于安全区，也处于平庸区。如果不寻找不对称机会，将被时代慢速淘汰。", priority: "寻找非线性机会" };
+        const calculateScores = (answers) => {
+            const getS = (id) => answers[id]?.s || 0;
+            return {
+                financial: Math.round((getS('q1_runway') + getS('q2_passive') + getS('q3_growth')) / 3),
+                time: Math.round((getS('q4_control') + getS('q5_role') + getS('q6_rnd')) / 3),
+                risk: Math.round((getS('q7_keyman') + getS('q8_replace') + getS('q9_dep')) / 3),
+                energy: Math.round((getS('q10_burnout') + getS('q11_network') + getS('q12_meaning')) / 3)
+            };
+        };
+
+        const getFuzzyStatus = (scores) => {
+            let defenseLevel = "🛡️ D级 (脆弱)", defenseColor = "text-[var(--danger)]";
+            if (scores.financial > 30) { defenseLevel = "🛡️ C级 (普通)"; defenseColor = "text-yellow-500"; }
+            if (scores.financial > 60) { defenseLevel = "🛡️ B级 (坚固)"; defenseColor = "text-blue-400"; }
+            if (scores.financial > 90) { defenseLevel = "🛡️ S级 (堡垒)"; defenseColor = "text-[var(--matrix-green)]"; }
+
+            const avgScore = (scores.financial + scores.time + scores.risk + scores.energy) / 4;
+            let sysVersion = "初始生存版", sysColor = "text-zinc-500";
+            if (avgScore > 40) { sysVersion = "稳健增长版"; sysColor = "text-white"; }
+            if (avgScore > 60) { sysVersion = "高效扩张版"; sysColor = "text-[var(--gold)]"; }
+            if (avgScore > 80) { sysVersion = "自由领航版"; sysColor = "text-[var(--accent)]"; }
+
+            return { defenseLevel, defenseColor, sysVersion, sysColor };
         };
 
         // ==========================================
-        // 2. 界面组件 (Components)
+        // 2. VIEW COMPONENTS
         // ==========================================
 
-        // 2.1 引导页
-        const Intro = ({ onStart }) => (
-            <div className="min-h-screen bg-grid flex flex-col items-center justify-center p-6 text-center fade-in">
-                <div className="max-w-2xl mx-auto border border-zinc-800 bg-black/80 backdrop-blur p-8 md:p-12 rounded-2xl shadow-2xl">
-                    <div className="text-xs font-mono text-[var(--accent)] mb-6 tracking-widest border border-[var(--accent)]/30 inline-block px-3 py-1 rounded-full bg-[var(--accent)]/10">LIFE_DUE_DILIGENCE_V2.0</div>
-                    <h1 className="text-3xl md:text-5xl font-bold mb-6 text-white tracking-tight">个人生存逻辑<br/><span className="text-[var(--accent)]">深度审计</span></h1>
-                    <p className="text-zinc-400 mb-10 leading-relaxed text-sm md:text-base">我们将这辆名为“你”的无限责任公司吊起来，<br/>通过咨询级维度，彻底检查底盘与引擎。<br/>这不仅关乎金钱，更关乎<span className="text-white font-bold">自由与控制权</span>。</p>
-                    <button onClick={onStart} className="group relative px-10 py-4 bg-white text-black font-bold font-mono text-sm hover:bg-[var(--accent)] transition-all rounded">[ 开始尽职调查 ]</button>
+        const IntroView = ({ onStart }) => (
+            <div className="h-screen flex flex-col items-center justify-center p-6 text-center fade-in bg-grid relative">
+                <div className="max-w-2xl mx-auto z-10">
+                    <div className="inline-block px-3 py-1 mb-6 text-xs font-mono text-[var(--accent)] border border-[var(--accent)]/30 rounded-full bg-[var(--accent)]/10 tracking-widest">LIFE_OS_V12.0</div>
+                    <h1 className="text-5xl md:text-6xl font-bold mb-8 text-white tracking-tighter">LifeOS<br/><span className="text-[var(--accent)]">生存逻辑审计</span></h1>
+                    <p className="text-zinc-400 mb-12 text-sm md:text-base leading-relaxed max-w-lg mx-auto">不仅是体检，更是一次精准的手术。<br/>通过 4 阶段系统，为你生成定制化生存方案。</p>
+                    <button onClick={onStart} className="px-10 py-4 bg-white text-black font-bold font-mono text-sm hover:bg-[var(--accent)] transition-all rounded shadow-lg">[ 启动审计 ]</button>
                 </div>
             </div>
         );
 
-        // 2.2 答题页
-        const QuestionScreen = ({ data, current, total, onSelect }) => {
-            const [animating, setAnimating] = useState(false);
-            const handleSelect = (opt) => {
-                setAnimating(true);
-                setTimeout(() => { setAnimating(false); onSelect(opt); }, 300);
-            };
-
+        const AuditView = ({ qIndex, onAnswer, onBack }) => {
+            const data = QUESTIONS[qIndex];
+            const progress = ((qIndex + 1) / QUESTIONS.length) * 100;
             return (
-                <div className="min-h-screen flex flex-col bg-grid">
-                    <div className="fixed top-0 left-0 w-full h-1 bg-zinc-900 z-50">
-                        <div className="h-full bg-[var(--accent)] transition-all duration-300" style={{width: `${((current + 1) / total) * 100}%`}}></div>
+                <div className="min-h-screen flex flex-col bg-grid fade-in" key={qIndex}>
+                    <div className="fixed top-0 left-0 w-full h-16 bg-black/90 backdrop-blur border-b border-zinc-800 z-50 flex items-center justify-between px-6">
+                        <div className="flex items-center gap-4">
+                            {qIndex > 0 && <button onClick={onBack} className="text-zinc-400 hover:text-white flex items-center gap-1 font-mono text-xs"><i data-lucide="arrow-left" width="14"></i> BACK</button>}
+                        </div>
+                        <span className="font-mono text-xs text-[var(--accent)]">{data.module}</span>
+                        <span className="font-mono text-sm font-bold text-white">{qIndex + 1} <span className="text-zinc-600">/ {QUESTIONS.length}</span></span>
                     </div>
-                    <div className={`flex-1 flex flex-col justify-center max-w-2xl mx-auto px-6 pt-12 pb-12 w-full transition-opacity duration-300 ${animating ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'}`}>
-                        <div className="mb-2 text-[var(--accent)] font-mono text-xs tracking-wider uppercase opacity-80">{data.module}</div>
-                        <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">{data.question}</h2>
-                        <div className="space-y-4">
+                    <div className="fixed top-16 left-0 w-full h-1 bg-zinc-900 z-50"><div className="h-full bg-[var(--accent)] transition-all duration-300" style={{width: `${progress}%`}}></div></div>
+                    <div className="flex-1 flex flex-col justify-center max-w-2xl mx-auto px-6 pt-24 pb-12 w-full">
+                        <div className="mb-2 text-[var(--accent)] font-mono text-xs uppercase opacity-80">{data.label.split('/')[0]}</div>
+                        <h2 className="text-2xl font-bold text-white mb-6">{data.label.split('/')[1]}</h2>
+                        <p className="text-zinc-300 text-lg mb-8 border-l-2 border-[var(--accent)] pl-6 py-2 bg-white/5 rounded-r">{data.question}</p>
+                        <div className="space-y-3">
                             {data.options.map((opt, idx) => (
-                                <div key={idx} onClick={() => handleSelect(opt)} className="option-card p-5 rounded-lg cursor-pointer group flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <span className="flex items-center justify-center w-6 h-6 rounded-full border border-zinc-700 text-[10px] font-mono text-zinc-500 group-hover:border-[var(--accent)] group-hover:text-[var(--accent)] transition-colors">{opt.val}</span>
-                                        <span className="text-sm md:text-base font-medium text-zinc-300 group-hover:text-white transition-colors">{opt.text}</span>
-                                    </div>
+                                <div key={idx} onClick={() => onAnswer(opt)} className="option-card p-4 rounded-lg cursor-pointer flex items-center justify-between group">
+                                    <div className="flex items-center gap-4"><span className="w-6 h-6 rounded-full border border-zinc-600 flex items-center justify-center text-[10px] text-zinc-500 group-hover:border-[var(--accent)] group-hover:text-[var(--accent)]">{opt.val}</span><span className="text-zinc-300 group-hover:text-white">{opt.text}</span></div>
                                 </div>
                             ))}
                         </div>
@@ -236,212 +196,302 @@
             );
         };
 
-        // 2.3 计算中
-        const Processing = ({ onComplete }) => {
+        const ProcessingView = ({ onComplete }) => {
             const [log, setLog] = useState("> CONNECTING...");
             useEffect(() => {
-                const logs = ["> ANALYZING FINANCIAL STRUCTURE...", "> DETECTING KEY MAN RISKS...", "> CALCULATING TIME OWNERSHIP...", "> GENERATING REPORT..."];
+                const logs = ["> AUDITING FINANCIAL ASSETS...", "> DETECTING KEY RISKS...", "> CALCULATING BURNOUT...", "> GENERATING STRATEGY..."];
                 let i = 0;
-                const interval = setInterval(() => { if (i < logs.length) { setLog(logs[i]); i++; } }, 600);
-                setTimeout(onComplete, 2500);
+                const interval = setInterval(() => { if (i < logs.length) setLog(logs[i++]); }, 600);
+                setTimeout(onComplete, 3000);
                 return () => clearInterval(interval);
             }, []);
             return (
                 <div className="h-screen flex flex-col items-center justify-center bg-black font-mono">
-                    <div className="w-12 h-12 border-2 border-zinc-800 border-t-[var(--accent)] rounded-full animate-spin mb-8"></div>
-                    <div className="text-[var(--accent)] text-sm mb-2">{log}</div>
+                    <div className="w-16 h-16 border-2 border-zinc-800 border-t-[var(--accent)] rounded-full animate-spin mb-8 shadow-[0_0_30px_rgba(0,240,255,0.2)]"></div>
+                    <div className="text-[var(--accent)] text-sm mb-2 animate-pulse">{log}</div>
                 </div>
             );
         };
 
-        // 2.4 审计结果概览
-        const ResultView = ({ persona, onNext }) => (
-    <div className="min-h-screen bg-grid pt-24 px-6 pb-20 fade-in flex items-center justify-center">
-        <div className="max-w-2xl w-full text-center">
-            <div className="border border-[var(--accent)]/20 bg-[var(--accent)]/5 p-8 rounded-2xl mb-8 relative overflow-hidden">
-                <div className="font-mono text-xs text-[var(--accent)] mb-4 tracking-widest uppercase">Audit Conclusion</div>
-                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{persona.label}</h2>
-                <p className="text-zinc-300 text-sm md:text-base leading-relaxed max-w-lg mx-auto mb-6">{persona.desc}</p>
-                <div className="inline-block bg-white/10 px-4 py-2 rounded text-xs font-mono text-white border border-white/20">首要行动: {persona.priority}</div>
-            </div>
-            <button onClick={onNext} className="w-full py-5 bg-white text-black font-bold text-lg rounded-lg shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-[1.02] transition-all flex items-center justify-center gap-3 group">
-                <span className="group-hover:animate-pulse">⚡</span> 获取具体行动方案 (Action Plan) <span>→</span>
-            </button>
-        </div>
-    </div>
-);
-
-        // 2.5 战术探测页 (连接行动)
-        const ProbeView = ({ personaId, onSelect }) => {
-            const probe = TACTICAL_PROBES[personaId] || TACTICAL_PROBES["STAGNANT"];
-            
-            // 确保图标刷新
-            useEffect(() => { if(window.lucide) window.lucide.createIcons(); }, []);
+        const ReportView = ({ answers, onNext, onRetry }) => {
+            const personaKey = calculatePersona(answers);
+            const content = PERSONA_DB[personaKey];
+            const [showStamp, setShowStamp] = useState(false);
+            useEffect(() => { setTimeout(() => setShowStamp(true), 800); }, []);
+            const parseText = (text) => text.split(/(\*\*.*?\*\*)/g).map((part, i) => part.startsWith('**') && part.endsWith('**') ? <span key={i} className="font-bold bg-[var(--gold)]/20 px-1">{part.slice(2, -2)}</span> : part);
 
             return (
-                <div className="min-h-screen bg-black flex flex-col justify-center items-center px-6 fade-in">
-                    <div className="max-w-2xl w-full">
-                        <div className="flex items-center gap-3 mb-8">
-                            <span className="w-3 h-3 bg-[var(--accent)] rounded-full animate-pulse"></span>
-                            <span className="text-[var(--accent)] font-mono text-sm tracking-[0.2em] uppercase">The Pivot Point</span>
+                <div className="min-h-screen bg-grid py-12 px-4 flex justify-center fade-in">
+                    <div className="w-full max-w-3xl report-paper p-8 md:p-12 relative">
+                        {showStamp && <div className="absolute top-8 right-8 stamp border-4 border-[var(--danger)] text-[var(--danger)] px-4 py-2 font-black text-xl rounded z-10">{content.stamp}</div>}
+                        <div className="border-b-2 border-black pb-6 mb-8 flex justify-between items-end">
+                            <div><div className="text-3xl font-black serif text-black">诊断报告</div><div className="text-xs font-mono text-zinc-500 mt-1">Life Due Diligence Report</div></div>
+                            <button onClick={onRetry} className="text-xs font-bold font-mono text-zinc-500 hover:text-black hover:underline cursor-pointer">修正数据 / REVISE</button>
                         </div>
-                        <h2 className="text-3xl md:text-4xl font-black text-white mb-8 leading-tight">关键抉择</h2>
-                        <p className="text-lg md:text-xl text-zinc-300 mb-10 font-serif border-l-4 border-[var(--accent)] pl-6 py-2">"{probe.question}"</p>
-                        <div className="space-y-6">
-                            {probe.options.map((opt) => (
-                                <button key={opt.id} onClick={() => onSelect(opt.route)} className="w-full text-left p-6 border border-zinc-800 bg-zinc-900/50 rounded-2xl hover:border-[var(--accent)] hover:bg-[var(--accent)]/5 transition-all group relative overflow-hidden">
-                                    <div className="relative z-10 flex justify-between items-center">
-                                        <div>
-                                            <div className="text-white font-bold text-lg mb-1 group-hover:text-[var(--accent)] transition-colors">{opt.text.split('：')[0]}</div>
-                                            <div className="text-zinc-500 text-sm group-hover:text-zinc-300 transition-colors">{opt.text.split('：')[1]}</div>
-                                        </div>
-                                        <i data-lucide="arrow-right" className="text-zinc-700 group-hover:text-[var(--accent)] transform group-hover:translate-x-2 transition-transform"></i>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
+                        <div className="mb-10 border-l-4 border-black pl-6 py-2"><h2 className="text-xl font-bold italic serif">"{content.verdict}"</h2></div>
+                        <div className="serif text-lg text-zinc-800 leading-relaxed mb-8">{parseText(content.desc)}</div>
+                        <div className="bg-zinc-100 p-6 rounded border-l-4 border-zinc-400 italic text-zinc-700 serif mb-10">建议方向: {content.priority}</div>
+                        <button onClick={onNext} className="w-full bg-black text-white font-mono text-sm py-4 hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2 shadow-lg">
+                            <span className="animate-pulse">✨</span> 生成行动蓝图 (Generate Blueprint) <span>→</span>
+                        </button>
                     </div>
                 </div>
             );
         };
 
-        // 2.6 最终任务卡片 (含专家卡)
-        const MissionCard = ({ missionId }) => {
-            const task = MVP_MISSIONS[missionId] || MVP_MISSIONS["DEFAULT"];
-            const [flipped, setFlipped] = useState(false);
+        // --- MVP VIEW: SELF-COMMITMENT + TRANSITION ---
+        const MVPView = ({ answers, onCommit }) => {
+            const personaKey = calculatePersona(answers);
+            const content = PERSONA_DB[personaKey];
+            const [step, setStep] = useState('INPUT'); 
+            const [userTask, setUserTask] = useState("");
             const [committed, setCommitted] = useState(false);
-            const [showQR, setShowQR] = useState(false);
 
-            // 翻转或状态改变时刷新图标
-            useEffect(() => { if(window.lucide) window.lucide.createIcons(); }, [flipped, committed, showQR]);
+            const handleGenerate = () => {
+                if(!userTask.trim()) return;
+                setStep('CARD');
+            };
 
             const handleCommit = (e) => {
                 e.stopPropagation();
                 setCommitted(true);
+                // 关键点：按下手印后，跳转到 BRIDGE (专家连接页)
+                setTimeout(() => onCommit(userTask, true), 1200); 
             };
 
-            return (
-                <div className="min-h-screen bg-black flex flex-col justify-center items-center px-6 fade-in bg-grid py-12 relative overflow-y-auto">
-                    <div className="w-full max-w-md h-[600px] perspective-1000 group mb-8" onClick={() => !committed && setFlipped(!flipped)}>
-                        <div className={`relative w-full h-full duration-700 transform-style-3d transition-transform ${flipped ? 'rotate-y-180' : ''} cursor-pointer`}>
-                            {/* 正面: 黄金门票 */}
-                            <div className="absolute w-full h-full backface-hidden bg-[#0f0f0f] border border-zinc-800 rounded-2xl flex flex-col items-center justify-center p-8 hover:border-[var(--gold)] transition-colors shadow-2xl glow-pulse">
-                                <div className="w-32 h-32 rounded-full border-2 border-[var(--gold)]/30 flex items-center justify-center mb-8 relative">
-                                    <div className="absolute inset-0 rounded-full border border-[var(--gold)]/10 scale-125"></div>
-                                    <i data-lucide="key" className="w-12 h-12 text-[var(--gold)]"></i>
-                                </div>
-                                <div className="text-[var(--gold)] font-mono text-xs border border-[var(--gold)] px-3 py-1 rounded mb-6 tracking-widest bg-[var(--gold)]/10">OPPORTUNITY UNLOCKED</div>
-                                <h3 className="text-2xl font-bold text-white mb-3 text-center leading-snug">来自未来的<br/>增长蓝图</h3>
-                                <p className="text-zinc-500 text-sm text-center font-mono mt-4 flex items-center gap-2"><span>点击开启新篇章</span><i data-lucide="arrow-right" width="14"></i></p>
+            if (step === 'INPUT') {
+                return (
+                    <div className="min-h-screen bg-black flex flex-col justify-center items-center px-6 fade-in">
+                        <div className="max-w-2xl w-full">
+                            <div className="text-[var(--accent)] font-mono text-xs mb-4 tracking-widest uppercase">Self-Contract Protocol</div>
+                            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">真正的改变，<br/>来自你的<span className="text-[var(--gold)]">自我承诺</span>。</h2>
+                            <div className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-xl mb-8">
+                                <p className="text-zinc-400 text-sm mb-4">系统建议方向：<span className="text-white font-bold">{content.priority}</span></p>
+                                <p className="text-zinc-300 text-lg serif italic">"基于诊断，为了{content.priority}，未来 2 周内，我可以立即执行的一件‘最小的小事’是..."</p>
                             </div>
-                            
-                            {/* 背面: 任务详情 */}
-                            <div className="absolute w-full h-full backface-hidden bg-[var(--paper-bg)] text-[#1a1a1a] rounded-2xl rotate-y-180 p-8 flex flex-col shadow-[0_0_50px_rgba(255,255,255,0.2)]" onClick={e => e.stopPropagation()}>
-                                <div className="flex justify-between items-start mb-6 border-b-2 border-[#1a1a1a]/10 pb-4">
-                                    <div><div className="font-black text-xl uppercase tracking-tighter text-[#1a1a1a]">ACTION CARD</div><div className="text-[10px] font-mono text-zinc-500">定制化破局方案</div></div>
-                                    <div className="bg-[#1a1a1a] text-white text-xs px-2 py-1 font-mono rounded">{task.time}</div>
-                                </div>
-                                <div className="flex-1 overflow-y-auto pr-2">
-                                    <h2 className="text-2xl font-black mb-4 leading-none text-[#1a1a1a]">{task.title}</h2>
-                                    <p className="text-sm text-zinc-700 leading-relaxed mb-6 font-serif">{task.desc}</p>
-                                    <div className="bg-white p-4 rounded-lg border border-zinc-200 shadow-sm">
-                                        <div className="text-xs font-bold mb-3 uppercase tracking-wide text-zinc-400">Execution Steps:</div>
-                                        <ul className="space-y-3">
-                                            {task.steps.map((step, i) => (
-                                                <li key={i} className="flex items-start gap-3 text-sm font-medium text-zinc-800">
-                                                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-zinc-100 flex items-center justify-center text-[10px] font-bold text-zinc-500">{i+1}</span>{step}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                </div>
-                                <div className="mt-4 pt-4 border-t border-zinc-200 text-center">
-                                    {!committed ? (
-                                        <button onClick={handleCommit} className="w-full py-3 bg-[#1a1a1a] text-white font-bold hover:bg-[var(--gold)] hover:text-black transition-all rounded-lg uppercase tracking-widest text-sm shadow-lg flex items-center justify-center gap-2">
-                                            <i data-lucide="sparkles" width="16"></i> 激活美好改变
-                                        </button>
-                                    ) : (
-                                        <div className="animate-pulse flex flex-col items-center py-2">
-                                            <div className="text-green-600 font-bold text-lg mb-1 flex items-center gap-2"><i data-lucide="check-circle" width="20"></i> 已激活</div>
-                                            <div className="text-xs font-mono text-zinc-500">Add expert contact below...</div>
-                                        </div>
-                                    )}
-                                </div>
+                            <textarea className="w-full bg-black border border-zinc-700 rounded-xl p-6 text-white text-xl font-serif cyber-input mb-8 focus:border-[var(--gold)]" rows="3" placeholder="例如：每天早起1小时 / 挂闲鱼卖一件东西..." value={userTask} onChange={(e) => setUserTask(e.target.value)}></textarea>
+                            <button onClick={handleGenerate} disabled={!userTask.trim()} className="w-full py-4 bg-white text-black font-bold text-lg rounded-full hover:bg-[var(--gold)] transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(255,255,255,0.2)]">生成行动契约</button>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-black flex flex-col justify-center items-center px-6 fade-in bg-grid py-12 relative">
+                    <div className="w-full max-w-md perspective-1000 group mb-8">
+                        <div className="relative w-full bg-[#0f0f0f] border border-[var(--gold)] rounded-2xl p-8 shadow-[0_0_50px_rgba(255,215,0,0.15)] glow-pulse">
+                            <div className="text-center mb-8">
+                                <div className="text-[var(--gold)] font-mono text-xs border border-[var(--gold)] px-3 py-1 rounded inline-block mb-4 tracking-widest bg-[var(--gold)]/10">MY PACT</div>
+                                <h3 className="text-2xl font-bold text-white mb-2 serif">行动契约书</h3>
+                                <div className="w-full h-px bg-gradient-to-r from-transparent via-[var(--gold)] to-transparent opacity-50 my-4"></div>
+                            </div>
+                            <p className="text-zinc-400 text-sm font-mono mb-2 text-center">I COMMIT TO:</p>
+                            <h2 className="text-3xl font-black text-white text-center mb-8 leading-tight italic">"{userTask}"</h2>
+                            <div className="mt-8 text-center">
+                                {!committed ? (
+                                    <button onClick={handleCommit} className="w-full py-4 bg-[var(--gold)] text-black font-bold hover:bg-white transition-all rounded-lg uppercase tracking-widest text-sm shadow-lg group relative overflow-hidden">
+                                        <span className="relative z-10 flex items-center justify-center gap-2"><i data-lucide="fingerprint" width="20"></i> 按下手印生效</span>
+                                    </button>
+                                ) : (
+                                    <div className="animate-pulse flex flex-col items-center py-2"><div className="text-green-500 font-bold text-lg mb-1 flex items-center gap-2"><i data-lucide="check-circle" width="20"></i> 契约已生效</div><div className="text-xs text-zinc-500">正在前往专家通道...</div></div>
+                                )}
                             </div>
                         </div>
                     </div>
-                    
-                    {/* 专家卡 (激活后显示) */}
-                    {committed && (
-                        <div className="expert-card p-6 rounded-2xl text-center relative overflow-hidden fade-in max-w-md mx-auto w-full mb-10">
-                            <h4 className="text-[var(--gold)] font-bold mb-2 serif text-lg">遇到执行卡点？</h4>
-                            <p className="text-zinc-400 text-sm mb-6">我是企业管理专家，提供1对1战略复盘。</p>
-                            
+                </div>
+            );
+        };
+
+        // --- THE CONNECTION (EXPERT PAGE) ---
+        const ExpertPage = ({ onDashboard }) => {
+            const [showQR, setShowQR] = useState(false);
+            return (
+                <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 slide-up bg-grid">
+                    <div className="max-w-lg w-full text-center mt-8 p-8 border border-[var(--gold)]/20 rounded-2xl bg-[#0f0f0f] shadow-[0_0_50px_rgba(255,215,0,0.1)]">
+                        <div className="w-24 h-24 rounded-full bg-zinc-800 border-2 border-[var(--gold)] flex items-center justify-center mx-auto mb-8 relative shadow-[0_0_40px_rgba(255,215,0,0.2)]">
+                            <svg className="w-12 h-12 text-[var(--gold)]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        </div>
+                        <h2 className="text-3xl font-bold text-white mb-4 leading-tight">拿不定主意？<br/>还是遇见了卡点？</h2>
+                        <p className="text-zinc-400 text-sm mb-10 leading-relaxed px-4">
+                            改变很难，不要独自硬抗。<br/>
+                            我是 <strong>小麦</strong>，企业管理咨询专家 & 战略专家。<br/>
+                            在执行中遇到任何阻力，找我聊聊。
+                        </p>
+                        
+                        <div className="space-y-4">
                             {showQR ? (
-                                <div className="fade-in bg-white p-4 rounded-xl mb-4 mx-auto w-48 h-48 flex items-center justify-center shadow-2xl relative border-4 border-[var(--gold)]">
-                                    <button onClick={() => setShowQR(false)} className="absolute top-2 right-2 text-black hover:text-red-500"><i data-lucide="x" width="16"></i></button>
-                                    <div className="text-center">
-                                        <i  src="./qr.png" alt="我的二维码" className="w-32 h-32 mx-auto mb-2 object-contain" />
-                                        <span className="text-[10px] text-zinc-500 font-mono block">扫码添加微信</span>
-                                    </div>
+                                <div className="bg-white p-6 rounded-2xl mx-auto w-64 h-64 flex flex-col items-center justify-center shadow-2xl relative animate-pulse border-4 border-[var(--gold)]">
+                                    <button onClick={() => setShowQR(false)} className="absolute top-2 right-2 text-black hover:text-red-500"><i data-lucide="x"></i></button>
+                                    <i data-lucide="qr-code" width="80" height="80" className="text-black mb-4"></i>
+                                    <span className="text-xs text-zinc-500 font-mono font-bold">扫码添加小麦微信</span>
                                 </div>
                             ) : (
-                                <button onClick={() => setShowQR(true)} className="w-full py-3 bg-[var(--gold)] text-black font-bold font-mono text-sm rounded hover:bg-yellow-400 transition-all flex justify-center items-center gap-2">
-                                    预约专家咨询通道 <i data-lucide="chevron-down" width="16"></i>
-                                </button>
+                                <button onClick={() => setShowQR(true)} className="w-full md:w-auto px-10 py-4 bg-[var(--gold)] text-black font-bold text-lg rounded-full hover:bg-yellow-400 transition-all shadow-[0_0_20px_rgba(255,215,0,0.3)] flex items-center justify-center gap-2 mx-auto"><span>添加小麦 (获取支持)</span><i data-lucide="arrow-right" width="20"></i></button>
                             )}
+                            
+                            <div className="flex justify-center gap-4 mt-8 pt-8 border-t border-zinc-900">
+                                <button onClick={() => window.open('#', '_blank')} className="py-2 px-6 bg-zinc-900 border border-zinc-800 rounded-full text-zinc-400 text-sm hover:text-white flex items-center gap-2"><i data-lucide="youtube" width="14"></i> Youtube</button>
+                                <button onClick={() => window.open('#', '_blank')} className="py-2 px-6 bg-zinc-900 border border-zinc-800 rounded-full text-zinc-400 text-sm hover:text-white flex items-center gap-2">抖音主页</button>
+                            </div>
+                            
+                            <div className="mt-8">
+                                <button onClick={onDashboard} className="text-zinc-500 text-sm underline hover:text-white transition-colors">我已经准备好了，进入战略指挥室 →</button>
+                            </div>
                         </div>
-                    )}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- DASHBOARD VIEW (V13.0 FINAL: SUMMARY + TRACKER) ---
+        const DashboardView = ({ answers, task, onShowExpert, onExit }) => {
+            const scores = calculateScores(answers);
+            const status = getFuzzyStatus(scores);
+            const personaKey = calculatePersona(answers);
+            const content = PERSONA_DB[personaKey];
+            const dateID = new Date().toISOString().slice(0,10).replace(/-/g,'');
+            
+            // Check-in Logic (Persistence)
+            const [checkins, setCheckins] = useState(() => {
+                const saved = localStorage.getItem('LIFEOS_CHECKINS');
+                return saved ? JSON.parse(saved) : Array(14).fill(false);
+            });
+            const toggleCheckin = (idx) => {
+                const newCheckins = [...checkins];
+                newCheckins[idx] = !newCheckins[idx];
+                setCheckins(newCheckins);
+                localStorage.setItem('LIFEOS_CHECKINS', JSON.stringify(newCheckins));
+            };
+            const progress = Math.round((checkins.filter(Boolean).length / 14) * 100);
+
+            // Radar Chart
+            const chartRef = useRef(null);
+            useEffect(() => {
+                if(chartRef.current) {
+                    const ctx = chartRef.current.getContext('2d');
+                    const chart = new Chart(ctx, {
+                        type: 'radar',
+                        data: {
+                            labels: ['财务', '时间', '护城河', '精力', '战略'],
+                            datasets: [{ label: '状态', data: [scores.financial, scores.time, scores.risk, scores.energy, 60], backgroundColor: 'rgba(0, 240, 255, 0.1)', borderColor: '#00f0ff', borderWidth: 2, pointBackgroundColor: '#000', pointBorderColor: '#00f0ff' }]
+                        },
+                        options: { scales: { r: { angleLines: {color:'rgba(255,255,255,0.05)'}, grid: {color:'rgba(255,255,255,0.05)'}, pointLabels: {color:'#888', font:{size:10}}, ticks: {display:false} } }, plugins: {legend:{display:false}} }
+                    });
+                    return () => chart.destroy();
+                }
+            }, [scores]);
+
+            return (
+                <div className="min-h-screen bg-black text-white p-4 md:p-8 fade-in pb-20 font-sans">
+                    <div className="flex justify-between items-end mb-8 border-b border-zinc-800 pb-4">
+                        <div><div className="text-[10px] font-mono text-[var(--accent)] mb-1 tracking-widest border border-[var(--accent)]/30 inline-block px-2 py-0.5 rounded bg-[var(--accent)]/5">CEO DASHBOARD</div><h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">战略指挥室</h1></div>
+                        <div className="text-right hidden md:block"><div className="text-xs text-zinc-500 font-mono mb-1">{dateID}</div><div className="text-[10px] text-green-500 font-mono flex items-center justify-end gap-1"><span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> ONLINE</div></div>
+                    </div>
+
+                    <div className="grid grid-cols-12 gap-6 mb-12">
+                        {/* 1. Summary Card */}
+                        <div className="col-span-12 md:col-span-4 dash-card border-t-4 border-t-[var(--accent)]">
+                            <div className="flex justify-between items-start mb-4">
+                                <div><div className="text-zinc-500 text-xs font-mono uppercase mb-1">PLAYER PROFILE</div><h2 className="text-2xl font-bold text-white mb-1">{content.label}</h2></div>
+                                <div className="text-right"><div className="text-[var(--accent)] font-bold">{status.sysVersion}</div><div className="text-xs text-zinc-600">{status.defenseLevel}</div></div>
+                            </div>
+                            <div className="h-40 flex items-center justify-center"><canvas ref={chartRef}></canvas></div>
+                        </div>
+
+                        {/* 2. Habit Tracker */}
+                        <div className="col-span-12 md:col-span-8 dash-card border-t-4 border-t-[var(--matrix-green)] flex flex-col">
+                            <div className="flex justify-between items-start mb-6">
+                                <div><div className="text-[var(--matrix-green)] font-mono text-xs mb-1">CURRENT MISSION</div><h3 className="text-xl font-bold text-white mb-1">"{task}"</h3><p className="text-zinc-500 text-xs">连续执行 14 天，重塑系统惯性。</p></div>
+                                <div className="text-right"><div className="text-3xl font-bold text-white mono">{progress}%</div><div className="text-[10px] text-zinc-500">COMPLETED</div></div>
+                            </div>
+                            <div className="grid grid-cols-7 gap-2 md:gap-3 mb-4 flex-1">
+                                {checkins.map((checked, i) => (
+                                    <div key={i} onClick={() => toggleCheckin(i)} className={`check-capsule ${checked ? 'checked' : ''}`}>
+                                        <span className="day-label">D{i+1}</span>
+                                        <i data-lucide="check" width="16" className="icon-box"></i>
+                                    </div>
+                                ))}
+                            </div>
+                            {/* Permanent Help Button */}
+                            <div onClick={onShowExpert} className="mt-4 pt-4 border-t border-zinc-800 flex items-center justify-between cursor-pointer group">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-[var(--gold)]/20 flex items-center justify-center text-[var(--gold)]"><i data-lucide="help-circle" width="16"></i></div>
+                                    <div><div className="text-zinc-300 text-sm font-bold group-hover:text-[var(--gold)] transition-colors">执行遇到困难？</div><div className="text-zinc-600 text-xs">呼叫小麦 (战略支持)</div></div>
+                                </div>
+                                <i data-lucide="chevron-right" className="text-zinc-600 group-hover:text-white transition-colors"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-12 text-center border-t border-zinc-900 pt-6">
+                        <button onClick={onExit} className="text-xs text-zinc-600 hover:text-white transition-colors flex items-center justify-center gap-2 mx-auto"><i data-lucide="rotate-ccw" width="12"></i> 返回系统首页 (Restart)</button>
+                    </div>
                 </div>
             );
         };
 
         // ==========================================
-        // 3. 主控制器 (Main App)
+        // 3. MAIN APP CONTROLLER
         // ==========================================
 
         const App = () => {
             const [view, setView] = useState('INTRO');
             const [qIndex, setQIndex] = useState(0);
             const [answers, setAnswers] = useState({});
-            const [persona, setPersona] = useState(null);
-            const [missionId, setMissionId] = useState(null);
+            const [finalTask, setFinalTask] = useState("");
 
-            const startAudit = () => setView('QUESTIONS');
-
-            const handleAnswer = (option) => {
-                const currentQ = DEEP_AUDIT_QUESTIONS[qIndex];
-                const newAnswers = { ...answers, [currentQ.id]: option };
-                setAnswers(newAnswers);
-
-                if (qIndex < DEEP_AUDIT_QUESTIONS.length - 1) {
-                    setQIndex(prev => prev + 1);
-                } else {
-                    setView('PROCESSING');
+            // Persistence
+            useEffect(() => {
+                const savedState = localStorage.getItem('LIFEOS_STATE');
+                if (savedState) {
+                    const parsed = JSON.parse(savedState);
+                    if(parsed.view === 'DASHBOARD') {
+                        setAnswers(parsed.answers);
+                        setFinalTask(parsed.finalTask);
+                        setView('DASHBOARD');
+                    }
                 }
+            }, []);
+
+            useEffect(() => {
+                if (view === 'DASHBOARD') {
+                    localStorage.setItem('LIFEOS_STATE', JSON.stringify({ view, answers, finalTask }));
+                }
+            }, [view, answers, finalTask]);
+
+            const handleAnswer = (opt) => {
+                const currentQ = QUESTIONS[qIndex];
+                setAnswers(prev => ({ ...prev, [currentQ.id]: opt }));
+                if (qIndex < QUESTIONS.length - 1) setQIndex(prev => prev + 1);
+                else setView('PROCESSING');
             };
 
-            const handleProcessingComplete = () => {
-                const result = calculatePersona(answers);
-                setPersona(result);
-                setView('RESULT');
+            const handleBack = () => { if(qIndex > 0) setQIndex(prev => prev - 1); else setView('INTRO'); };
+            const handleRetry = () => { setQIndex(0); setView('AUDIT'); };
+            
+            // Flow: MVP -> Expert (Bridge) -> Dashboard
+            const handleCommit = (task, goToBridge = false) => { 
+                setFinalTask(task); 
+                if(goToBridge) setView('BRIDGE');
+                else setView('DASHBOARD');
             };
-
-            const goToMVP = () => setView('MVP_PROBE');
-
-            const handleProbeSelect = (route) => {
-                setMissionId(route);
-                setView('MVP_MISSION');
+            
+            const handleRestart = () => {
+                setQIndex(0); setAnswers({}); setFinalTask(""); setView('INTRO');
+                localStorage.removeItem('LIFEOS_STATE');
+                // Keep habits (checkins) optionally
             };
 
             return (
                 <div className="antialiased selection:bg-[var(--accent)] selection:text-black">
-                    {view === 'INTRO' && <Intro onStart={startAudit} />}
-                    {view === 'QUESTIONS' && <QuestionScreen data={DEEP_AUDIT_QUESTIONS[qIndex]} current={qIndex} total={DEEP_AUDIT_QUESTIONS.length} onSelect={handleAnswer} />}
-                    {view === 'PROCESSING' && <Processing onComplete={handleProcessingComplete} />}
-                    {view === 'RESULT' && <ResultView persona={persona} onNext={goToMVP} />}
-                    {view === 'MVP_PROBE' && <ProbeView personaId={persona.id} onSelect={handleProbeSelect} />}
-                    {view === 'MVP_MISSION' && <MissionCard missionId={missionId} />}
+                    {view === 'INTRO' && <IntroView onStart={() => setView('AUDIT')} />}
+                    {view === 'AUDIT' && <AuditView qIndex={qIndex} onAnswer={handleAnswer} onBack={handleBack} />}
+                    {view === 'PROCESSING' && <ProcessingView onComplete={() => setView('REPORT')} />}
+                    {view === 'REPORT' && <ReportView answers={answers} onNext={() => setView('MVP')} onRetry={handleRetry} />}
+                    {view === 'MVP' && <MVPView answers={answers} onCommit={handleCommit} />}
+                    {view === 'BRIDGE' && <ExpertPage onDashboard={() => setView('DASHBOARD')} />}
+                    {view === 'DASHBOARD' && <DashboardView answers={answers} task={finalTask} onShowExpert={() => setView('EXPERT_OVERLAY')} onExit={handleRestart} />}
+                    {view === 'EXPERT_OVERLAY' && <ExpertPage onBack={() => setView('DASHBOARD')} onDashboard={() => setView('DASHBOARD')} />}
                 </div>
             );
         };
